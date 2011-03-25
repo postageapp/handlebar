@@ -1,7 +1,7 @@
 require 'helper'
 
 class TestHandlebar < Test::Unit::TestCase
-  should "probably rename this file and start testing for real" do
-    flunk "hey buddy, you should probably rename this file and start testing for real"
+  def test_empty_template
+    template = Handlebar::Template.new('')
   end
 end
