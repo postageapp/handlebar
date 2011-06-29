@@ -8,9 +8,11 @@ rescue Bundler::BundlerError => e
   $stderr.puts "Run `bundle install` to install missing gems"
   exit e.status_code
 end
+
 require 'rake'
 
 require 'jeweler'
+
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
   gem.name = "handlebar"
@@ -21,6 +23,7 @@ Jeweler::Tasks.new do |gem|
   gem.email = "github@tadman.ca"
   gem.authors = [ "Scott Tadman" ]
 end
+
 Jeweler::RubygemsDotOrgTasks.new
 
 require 'rake/testtask'
@@ -31,14 +34,3 @@ Rake::TestTask.new(:test) do |test|
 end
 
 task :default => :test
-
-require 'rake/rdoctask'
-Rake::RDocTask.new do |rdoc|
-  version = File.exist?('VERSION') ? File.read('VERSION') : ""
-
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "handlebar #{version}"
-  rdoc.rdoc_files.include('README*')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-

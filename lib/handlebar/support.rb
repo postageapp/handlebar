@@ -13,6 +13,10 @@ module Handlebar::Support
   def js_escape(object)
     object.inspect
   end
+
+  def css_escape(object)
+    [ object ].flatten.join(' ')
+  end
   
   def iterate(object)
     if (object.respond_to?(:each))
@@ -24,8 +28,18 @@ module Handlebar::Support
     end
   end
   
-  def cast_as_vars(object)
-    object.respond_to?(:each) ? object : [ object ]
+  def cast_as_vars(object, stack)
+    if (object.is_a?(Hash))
+      stack.each do |parent|
+        if (parent.is_a?(Hash))
+          object = parent.merge(object)
+        end
+      end
+    
+      object
+    else
+      object.respond_to?(:each) ? object : [ object ]
+    end
   end
   
   extend self

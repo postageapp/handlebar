@@ -23,13 +23,17 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     template = Handlebar::Template.new('example {{  example  }} text')
     
     assert_equal 'example something text', template.interpret(:example => 'something')
-    
+  end
+  
+  def test_boolean_templates
     template = Handlebar::Template.new('{{?boolean}}true {{/}}false')
     
     assert_equal 'false', template.interpret
     assert_equal 'true false', template.interpret(:boolean => true)
     assert_equal 'false', template.interpret(:boolean => false)
+  end
     
+  def test_sectioned_templates
     template = Handlebar::Template.new('<head>{{:head}}<{{tag}}>{{/}}</head>')
     
     assert_equal '<head><meta></head>', template.interpret(:head => 'meta')
@@ -57,5 +61,25 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     template = Handlebar::Template.new('{{=example}}', :html)
     
     assert_equal '<strong>', template.interpret('<strong>')
+  end
+
+  def test_recursive_templates
+    template = Handlebar::Template.new('{{*example}}', :html)
+    
+    assert_equal 'child', template.interpret(nil, { :example => '{{*parent}}', :parent => 'child' })
+  end
+
+  def test_missing_templates
+    template = Handlebar::Template.new('{{*example}}', :html)
+    
+    assert_equal '', template.interpret(nil, { })
+  end
+
+  def test_recursive_circular_templates
+    template = Handlebar::Template.new('{{*reference}}', :html)
+    
+    assert_exception Handlebar::Template::RecursionError do
+      template.interpret(nil, { :reference => '{{*backreference}}', :backreference => '{{*reference}}' })
+    end
   end
 end

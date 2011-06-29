@@ -4,7 +4,7 @@ Each of these {{variable}} substitutions can be either {{simple}},
 {{=literal}}, {{%url_escaped}}, {{.css_escaped}}, {{$json_escaped}} or
 {{&html_escaped}} depending on preference.
 
-It's even possible to place other {{templates}} by name using the standard
+It's even possible to place other {{*templates}} by name using the standard
 markup, or include or default one using {{*}} instead of {{default}}.
 
 Sometimes it's practical to define a block which can be re-used. These are
