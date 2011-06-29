@@ -4,6 +4,10 @@ class Handlebar::Template
   TOKEN_REGEXP = /((?:[^\{]|\{[^\{]|\{\{\{)+)|\{\{\s*([\&\%\$\.\:\?\*\/\=])?([^\}]*)\}\}/.freeze
   TOKEN_TRIGGER = /\{\{/.freeze
 
+  # == Utility Classes ======================================================
+  
+  class TemplateHash < Hash; end
+
   # == Exceptions ===========================================================
   
   class ParseError < Exception ; end
@@ -15,8 +19,20 @@ class Handlebar::Template
 
   # == Instance Methods =====================================================
   
-  def initialize(content, context = nil)
-    @context = context
+  def initialize(content, options = nil)
+    if (options)
+      if (method = options[:escape])
+        case (method.to_sym)
+        when :html, :html_escape
+          @escape_method = :html_escape
+        when :text, nil
+          # Default, ignored
+        else
+          raise ArgumentError, "Unknown escape method #{method}"
+        end
+      end
+    end
+    
     @content =
       case (content)
       when IO
@@ -65,7 +81,8 @@ class Handlebar::Template
             stack << [ :conditional, tag ]
             method << "if(v&&v.is_a?(Hash)&&v[#{tag.to_sym.inspect}]);"
           when ?*
-            method << "_t=t&&t[#{tag.to_sym.inspect}];r<<(_t.respond_to?(:call)?_t.call(v,t):_t.to_s);"
+            template = tag.empty? ? nil : tag.to_sym
+            method << "_t=t&&t[#{template.inspect}];r<<(_t.respond_to?(:call)?_t.call(v,t):_t.to_s);"
           when ?/
             # Closes out a section or conditional
             closed = stack.pop
@@ -75,7 +92,7 @@ class Handlebar::Template
               unless (tag == closed[1] or tag.empty?)
                 raise ParseError, "Template contains unexpected {{#{tag}}}, expected {{#{closed[1]}}}"
               end
-
+              
               method << "};v=s.pop;end;"
             when :conditional
               method << "end;"
@@ -91,8 +108,8 @@ class Handlebar::Template
             # Contextual insertion
             subst = "v.is_a?(Array)?v[#{stack[-1][2]}]:v[#{tag.to_sym.inspect}]"
             
-            if (@context)
-              method << "v&&r<<h.#{@context}_escape(#{subst}.to_s);"
+            if (@escape_method)
+              method << "v&&r<<h.#{@escape_method}(#{subst}.to_s);"
             else
               method << "v&&r<<(#{subst}).to_s;"
             end
@@ -120,7 +137,7 @@ class Handlebar::Template
     end
   end
   
-  def interpret(variables = nil, templates = nil)
+  def render(variables = nil, templates = nil, parents = nil)
     variables =
       case (variables)
       when Array
@@ -132,24 +149,52 @@ class Handlebar::Template
       end
       
     if (templates)
-      templates = Hash[
-        templates.collect do |k, v|
-          [
-            k,
-            case (v)
-            when Handlebar::Template, Proc
-              v
-            when TOKEN_TRIGGER
-              self.class.new(v)
-            else
-              v.to_s
-            end
-          ]
-        end
-      ]
+      # Unless the template options have already been processed, mapping
+      # will need to be performed.
+      unless (templates.is_a?(TemplateHash))
+        templates = TemplateHash[
+          templates.collect do |k, v|
+            [
+              k,
+              case (v)
+              when Handlebar::Template, Proc, Array
+                v
+              when TOKEN_TRIGGER
+                self.class.new(v, :escape => @escape_method)
+              else
+                v.to_s
+              end
+            ]
+          end
+        ]
+      end
+    else
+      templates = TemplateHash.new
     end
     
-    self.to_proc.call(variables, templates)
+    if (parents)
+      case (parents)
+      when Array
+        _parents = parents.dup
+        _parent = _parents.shift
+        _parent.render(
+          variables,
+          templates.merge(
+            nil => self.to_proc.call(variables, templates)
+          ),
+          _parents.empty? ? nil : _parents
+        )
+      when Handlebar::Template, Proc
+        parents.render(
+          variables,
+          templates.merge(
+            nil => self.to_proc.call(variables, templates)
+          )
+        )
+      end
+    else
+      self.to_proc.call(variables, templates)
+    end
   end
-  alias_method :call, :interpret
+  alias_method :call, :render
 end
