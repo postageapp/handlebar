@@ -100,6 +100,11 @@ class Handlebar::Template
       when Array
         _parents = parents.dup
         _parent = _parents.shift
+        
+        unless (_parent.is_a?(Handlebar::Template))
+          _parent = self.class.new(_parent, :escape => @escape_method)
+        end
+        
         _parent.render(
           variables,
           templates.merge(
@@ -114,6 +119,21 @@ class Handlebar::Template
             nil => self.to_proc.call(variables, templates)
           )
         )
+      when String
+        _parent = parents
+        
+        unless (_parent.is_a?(Handlebar::Template))
+          _parent = self.class.new(_parent, :escape => @escape_method)
+        end
+        
+        _parent.render(
+          variables,
+          templates.merge(
+            nil => self.to_proc.call(variables, templates)
+          )
+        )
+      else
+        raise ArgumentError, "Invalid options passed in to parents"
       end
     else
       self.to_proc.call(variables, templates)

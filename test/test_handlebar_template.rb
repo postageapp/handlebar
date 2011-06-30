@@ -86,15 +86,25 @@ class TestHandlebarTemplate < Test::Unit::TestCase
   end
   
   def test_parent_templates
-    parent_template = Handlebar::Template.new('{{a}}[{{*}}]{{b}}')
-    child_template = Handlebar::Template.new('{{c}}{{*}}')
-    final_template = Handlebar::Template.new('{{a}}')
+    parent_template = Handlebar::Template.new('{{a}}[{{*}}]{{b}}'.freeze)
+    child_template = Handlebar::Template.new('{{c}}{{*}}'.freeze)
+    final_template = Handlebar::Template.new('{{a}}'.freeze)
     
     variables = { :a => 'A', :b => 'B', :c => 'C' }
     
     assert_equal 'A', final_template.render(variables)
     assert_equal 'CA', final_template.render(variables, nil, child_template)
     assert_equal 'A[CA]B', final_template.render(variables, nil, [ child_template, parent_template ].freeze)
+  end
+
+  def test_inline_parent_templates
+    template = Handlebar::Template.new('{{a}}')
+    
+    variables = { :a => 'A', :b => 'B', :c => 'C' }
+    
+    assert_equal 'A', template.render(variables)
+    assert_equal 'CA', template.render(variables, nil, '{{c}}{{*}}'.freeze)
+    assert_equal 'A[CA]B', template.render(variables, nil, %w[ {{c}}{{*}} {{a}}[{{*}}]{{b}} ].freeze)
   end
   
   def test_extract_variables
