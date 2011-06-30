@@ -1,7 +1,7 @@
 class Handlebar::Template
   # == Constants ============================================================
   
-  TOKEN_REGEXP = /((?:[^\{]|\{[^\{]|\{\{\{)+)|\{\{\s*([\&\%\$\.\:\?\*\/\=])?([^\}]*)\}\}/.freeze
+  TOKEN_REGEXP = /((?:[^\{]|\{[^\{]|\{\{\{)+)|\{\{\s*([\&\%\$\.\:\*\/\=]|\?\!?)?([^\}]*)\}\}/.freeze
   TOKEN_TRIGGER = /\{\{/.freeze
 
   # == Utility Classes ======================================================
@@ -161,7 +161,7 @@ class Handlebar::Template
         tag = tag.empty? ? nil : tag.to_sym
         
         case (tag_type)
-        when ?&
+        when '&'
           # HTML escaped
           index = stack[-1][2][tag.inspect]
 
@@ -169,28 +169,28 @@ class Handlebar::Template
           
           variables and variables[tag] = true
 
-        when ?%
+        when '%'
           # URI escaped
           index = stack[-1][2][tag.inspect]
 
           source and source << "v&&r<<h.uri_escape(v.is_a?(Array)?v[#{index}]:v[#{tag.inspect}]);"
 
           variables and variables[tag] = true
-        when ?$
+        when '$'
           # JavaScript escaped
           index = stack[-1][2][tag.inspect]
 
           source and source << "v&&r<<h.js_escape(v.is_a?(Array)?v[#{index}]:v[#{tag.inspect}]);"
 
           variables and variables[tag] = true
-        when ?.
+        when '.'
           # CSS escaped
           index = stack[-1][2][tag.inspect]
 
           source and source << "v&&r<<h.css_escape(v.is_a?(Array)?v[#{index}]:v[#{tag.inspect}]);"
 
           variables and variables[tag] = true
-        when ?:
+        when ':'
           # Defines start of a :section
           index = stack[-1][2][tag.inspect]
 
@@ -201,7 +201,7 @@ class Handlebar::Template
           source and source << "h.iterate(v){|v|;v=h.cast_as_vars(v, s);"
           
           sections and sections[tag] = true
-        when ??
+        when '?', '?!'
           # Defines start of a ?conditional
           
           stack[-1][2][tag.inspect]
@@ -209,14 +209,14 @@ class Handlebar::Template
           # The stack will inherit the variable assignment locations from the
           # existing stack layer.
           stack << [ :conditional, tag, stack[-1][2] ]
-          source and source << "if(v&&v.is_a?(Hash)&&v[#{tag.inspect}]);"
+          source and source << "#{tag_type=='?' ? 'if' : 'unless'}(v&&v.is_a?(Hash)&&v[#{tag.inspect}]);"
 
           variables and variables[tag] = true
-        when ?*
+        when '*'
           source and source << "_t=t&&t[#{tag.inspect}];r<<(_t.respond_to?(:call)?_t.call(v,t):_t.to_s);"
           
           templates and templates[tag] = true
-        when ?/
+        when '/'
           # Closes out a section or conditional
           closed = stack.pop
           
@@ -232,7 +232,7 @@ class Handlebar::Template
           when :base
             raise ParseError, "Unexpected {{#{tag}}}, too many tags closed"
           end
-        when ?=
+        when '='
           # Literal insertion
           index = stack[-1][2][tag.inspect]
 

@@ -33,6 +33,12 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     assert_equal 'false', template.render
     assert_equal 'true false', template.render(:boolean => true)
     assert_equal 'false', template.render(:boolean => false)
+
+    template = Handlebar::Template.new('{{?boolean}}true{{/}}{{?!boolean}}false{{/}}')
+
+    assert_equal 'false', template.render
+    assert_equal 'true', template.render(:boolean => true)
+    assert_equal 'false', template.render(:boolean => false)
   end
     
   def test_sectioned_templates
