@@ -77,6 +77,26 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     assert_equal 'child', template.render(nil, { :example => '{{*parent}}', :parent => 'child' }.freeze)
   end
 
+  def test_dynamic_variables
+    template = Handlebar::Template.new('{{example}}{{text}}', :escape => :html)
+    
+    generator = Hash.new do |h, k|
+      h[k] = "<#{k}>"
+    end
+    
+    assert_equal '&lt;example&gt;&lt;text&gt;', template.render(generator)
+  end
+  
+  def test_dynamic_templates
+    template = Handlebar::Template.new('<{{*example}}>', :escape => :html)
+    
+    generator = Hash.new do |h, k|
+      h[k] = k.to_s.upcase
+    end
+    
+    assert_equal '<EXAMPLE>', template.render(nil, generator)
+  end
+
   def test_missing_templates
     template = Handlebar::Template.new('{{*example}}', :escape => :html)
     

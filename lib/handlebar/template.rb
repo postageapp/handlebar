@@ -66,7 +66,11 @@ class Handlebar::Template
       when Array
         variables
       when Hash
-        Hash[variables.collect { |k, v| [ k.to_sym, v ] }]
+        _variables = variables
+        
+        Hash.new do |h, k|
+          h[k] = (_variables[k.to_sym] || _variables[k.to_s])
+        end
       else
         [ variables ]
       end
@@ -75,21 +79,20 @@ class Handlebar::Template
       # Unless the template options have already been processed, mapping
       # will need to be performed.
       unless (templates.is_a?(TemplateHash))
-        templates = TemplateHash[
-          templates.collect do |k, v|
-            [
-              k,
-              case (v)
-              when Handlebar::Template, Proc, Array
-                v
-              when TOKEN_TRIGGER
-                self.class.new(v, :escape => @escape_method)
-              else
-                v.to_s
-              end
-            ]
-          end
-        ]
+        _templates = templates
+        templates = TemplateHash.new do |h, k|
+          v = _templates[k]
+          
+          h[k] =
+            case (v)
+            when Handlebar::Template, Proc, Array
+              v
+            when TOKEN_TRIGGER
+              self.class.new(v, :escape => @escape_method)
+            else
+              v.to_s
+            end
+        end
       end
     else
       templates = TemplateHash.new
