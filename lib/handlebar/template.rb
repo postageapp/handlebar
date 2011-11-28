@@ -69,7 +69,7 @@ class Handlebar::Template
         _variables = variables
         
         Hash.new do |h, k|
-          h[k] = (_variables[k.to_sym] || _variables[k.to_s])
+          h[k] = k ? (_variables[k.to_sym] || _variables[k.to_s]) : _variables[k]
         end
       else
         [ variables ]

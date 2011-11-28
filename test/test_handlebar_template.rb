@@ -212,4 +212,16 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     
     assert_equal '<p>&lt;strong&gt;</p>', deserialized_template.render('<strong>')
   end
+  
+  def test_with_broken_input
+    template = Handlebar::Template.new('{{}}')
+    
+    assert_equal '', template.render
+    assert_equal '', template.render(nil)
+    assert_equal '', template.render(nil => nil)
+    
+    template = Handlebar::Template.new('{{test}}')
+    
+    assert_equal '', template.render(nil => nil)
+  end
 end
