@@ -206,8 +206,6 @@ class Handlebar::Template
           sections and sections[tag] = true
         when '?', '?!'
           # Defines start of a ?conditional
-          
-          stack[-1][2][tag.inspect]
 
           # The stack will inherit the variable assignment locations from the
           # existing stack layer.
