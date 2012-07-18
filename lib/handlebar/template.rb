@@ -3,6 +3,8 @@ class Handlebar::Template
   
   TOKEN_REGEXP = /((?:[^\{]|\{[^\{]|\{\{\{)+)|\{\{\s*([\&\%\$\.\:\*\/\=]|\?\!?)?([^\}]*)\}\}/.freeze
   TOKEN_TRIGGER = /\{\{/.freeze
+    
+  TO_YAML_PROPERTIES = %w[ @content @escape_method ].freeze
 
   # == Utility Classes ======================================================
   
@@ -24,7 +26,7 @@ class Handlebar::Template
   class RecursionError < Exception; end
 
   # == Class Methods ========================================================
-
+  
   # == Instance Methods =====================================================
   
   def initialize(content, options = nil)
@@ -61,20 +63,8 @@ class Handlebar::Template
   end
   
   def render(variables = nil, templates = nil, parents = nil)
-    variables =
-      case (variables)
-      when Array
-        variables
-      when Hash
-        _variables = variables
-        
-        Hash.new do |h, k|
-          h[k] = k ? (_variables[k.to_sym] || _variables[k.to_s]) : _variables[k]
-        end
-      else
-        [ variables ]
-      end
-      
+    variables = Handlebar::Support.variable_stack(variables, true)
+    
     if (templates)
       # Unless the template options have already been processed, mapping
       # will need to be performed.
@@ -275,11 +265,17 @@ class Handlebar::Template
     true
   end
   
-  def to_yaml(dump)
+  def to_yaml_properties
+    TO_YAML_PROPERTIES
+  end
+  
+  def psych_to_yaml(dump)
+    # Avoid serializing the generated proc by moving it to a temporary
+    # variable for the duration of this operation.
     _proc, @_proc = @_proc, nil
     
     super(dump)
-    
+
     @_proc = _proc
     
     dump

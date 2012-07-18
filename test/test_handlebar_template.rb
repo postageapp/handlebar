@@ -52,14 +52,21 @@ class TestHandlebarTemplate < Test::Unit::TestCase
     assert_equal '', template.render(:boolean => true)
     assert_equal '', template.render(:boolean => false)
   end
-    
+  
   def test_sectioned_templates
     template = Handlebar::Template.new('<head>{{:head}}<{{tag}}>{{/}}</head>')
     
     assert_equal '<head><meta></head>', template.render(:head => 'meta')
+    assert_equal '<head><meta></head>', template.render('head' => 'meta')
     assert_equal '<head><meta><link></head>', template.render(:head => %w[ meta link ])
+    assert_equal '<head><meta><link></head>', template.render('head' => [ :meta, :link ])
     assert_equal '<head><meta><link></head>', template.render(:head => [ { :tag => 'meta' }, { :tag => 'link' } ])
+    assert_equal '<head><meta><link></head>', template.render('head' => [ { 'tag' => :meta }, { 'tag' => :link } ])
     assert_equal '<head></head>', template.render
+    assert_equal '<head></head>', template.render([ ])
+    assert_equal '<head></head>', template.render({ })
+    assert_equal '<head><></head>', template.render('')
+    assert_equal '<head><></head>', template.render(:head => '')
     assert_equal '<head></head>', template.render(:head => nil)
     assert_equal '<head></head>', template.render(:head => [ ])
 

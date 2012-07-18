@@ -42,5 +42,32 @@ module Handlebar::Support
     end
   end
   
+  def variable_stack(variables, force_as_array = true)
+    case (variables)
+    when Hash
+      remapped = Hash[
+        variables.collect do |k, v|
+          [ k ? k.to_sym : k, variable_stack(v, false) ]
+        end
+      ]
+      
+      if (default = variables.default)
+        remapped.default = default
+      end
+
+      if (default_proc = variables.default_proc)
+        remapped.default_proc = default_proc
+      end
+      
+      remapped
+    when Array
+      variables.collect do |v|
+        variable_stack(v, false)
+      end
+    else
+      force_as_array ? [ variables ] : variables
+    end
+  end
+  
   extend self
 end
